@@ -4,7 +4,7 @@
  * Created: 28/04/2020 23:20:59
  *  Author: sony
  */ 
-
+ /*
 #include <avr/io.h>
 #include "BIT_MATH.h"
 #include <math.h>
@@ -196,3 +196,4 @@ void I2C_Stop(void)
 	TWCR = (1<<TWINT)|(1<<TWEN)| (1<<TWSTO);
 	gu8_I2C_StopFlag = TRUE;
 }
+*/

@@ -77,7 +77,7 @@ EEINT_CheckType EEINT_ReqWrite(unsigned char StartAddress, const unsigned char *
       if (Length < EEINT_MAX_SIZE)
       {
          // Continuously Write The Data Bytes
-         EEPROM_WriteBytes(StartAddress, DataPtr, Length);
+         EEPROM_WriteBytes(StartAddress, (unsigned char *)DataPtr, Length);
          EEINT_Status = EEINT_OK;
          EEINT_SM1 = DONE_WR;
       }

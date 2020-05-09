@@ -44,7 +44,7 @@ void task1_code(void *p)
 	{
 		vTaskDelay(50);
 		EEINT_Main();
-		EEEXT_Main();
+		//EEEXT_Main();
 		MEMIF_Main();
 		NVM_Main();
 		Main_Main();
@@ -54,9 +54,9 @@ void task1_code(void *p)
 int main(void)
 {
 	DIO_Init();
-	I2C_Init();
+	//I2C_Init();
 	EEINT_Init();
-	EEEXT_Init();
+	//EEEXT_Init();
 	MEMIF_Init();
 	NVM_Init();
 	App1_init();

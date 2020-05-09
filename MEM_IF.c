@@ -32,7 +32,10 @@ typedef struct {
 } str_Buffer_t;
 
 typedef EEEXT_CheckType(*WritePtr[EEPROM_MODULE_NUM])(unsigned char StartAddress, const unsigned char* DataPtr, unsigned char Length);
+typedef EEEXT_CheckType(*WritePtrType)(unsigned char StartAddress, const unsigned char* DataPtr, unsigned char Length);
 typedef EEEXT_CheckType(*ReadPtr[EEPROM_MODULE_NUM])(unsigned char StartAddress,unsigned char* DataPtr,unsigned char Length);
+typedef EEEXT_CheckType(*ReadPtrType)(unsigned char StartAddress,unsigned char* DataPtr,unsigned char Length);
+
 
 /*  **************************               Define 					*********************				*/
 
@@ -75,10 +78,10 @@ void MEMIF_Init(void){
 	gstr_DataBuffer.BlockIndex=BLOCK_INDEX_INIT_VALUE ; 
 	gstr_DataBuffer.OperationId= OPERATION_INIT_VALUE;	
 	gstr_DataBuffer.DataPtr =NULL;						
-	ga_WritePtrToFun[EEINT_WRITE_FUN_INDEX]= EEINT_ReqWrite; 
-	ga_WritePtrToFun[EEEXT_WRITE_FUN_INDEX]=EEEXT_ReqWrite;  
-	ga_ReadPtrToFun[EEINT_READ_FUN_INDEX]= EEINT_ReqRead;     
-	ga_ReadPtrToFun[EEEXT_READ_FUN_INDEX]= EEEXT_ReqRead;
+	ga_WritePtrToFun[EEINT_WRITE_FUN_INDEX]= (WritePtrType)EEINT_ReqWrite; 
+	//ga_WritePtrToFun[EEEXT_WRITE_FUN_INDEX]=EEEXT_ReqWrite;  
+	ga_ReadPtrToFun[EEINT_READ_FUN_INDEX]=(ReadPtrType) EEINT_ReqRead;     
+	//ga_ReadPtrToFun[EEEXT_READ_FUN_INDEX]= EEEXT_ReqRead;
 	
 	DateWriteFlag =WRITE_FLAG_CLEAR_VALUE;
 	DataReadFlag = READ_FLAG_CLEAR_VALUE; 

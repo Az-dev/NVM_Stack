@@ -235,50 +235,54 @@ void NVM_Main(void)
          /* Update NVM SM's state to IDLE */
          NVM_SM_State = NVM_IDLE;
          break;
-      case NVM_BLOCK_WRITE:
+      case NVM_BLOCK_WRITE:;
          /* Read notification of the nvm-block-wrtie (success or fail) */
          /* report/notify block write (success or fail) to the upper layer */
          /* update NVM state according nvm-block-wrtie*/
-         switch (nvm - block - write - state)
-         {
-            /* case success : move to idle waiting for the next action */
-            /* case fail : move to NVM-error state to procced to the suitable error handling procedure */
-         }
+//          switch (/*nvm - block - write - state*/)
+//          {
+//             /* case success : move to idle waiting for the next action */
+//             /* case fail : move to NVM-error state to procced to the suitable error handling procedure */
+//          }
          break;
-      case NVM_BLOCK_READ:
+      case NVM_BLOCK_READ:;
          /* Read notification of the nvm-block-read (success or fail) */
          /* report/notify block read (success or fail) to the upper layer */
          /* update NVM state according nvm-block-read*/
-         switch (nvm - block - read - state)
-         {
-            /* case success : move to idle waiting for the next action */
-            /* case fail : move to NVM-error state to procced to the suitable error handling procedure */
-         }
+         
+//          switch (/*nvm - block - read - state*/)
+//          {
+//             /* case success : move to idle waiting for the next action */
+//             /* case fail : move to NVM-error state to procced to the suitable error handling procedure */
+//          }
+         
          break;
-      case NVM_CHUNK_WRITE:
+      case NVM_CHUNK_WRITE:;
          /* Read notification of the nvm-chunk-wrtie (success or fail) */
          /* report/notify chunk write (success or fail) to the upper layer */
          /* update NVM state according nvm-chunk-wrtie*/
-         switch (nvm - chunk - write - state)
-         {
-            /* case busy : don't update NVM_SM's state */
-            /* case success : move to idle waiting for the next action */
-            /* case fail : move to NVM-error state to procced to the suitable error handling procedure */
-         }
+//          switch (/*nvm - chunk - write - state*/)
+//          {
+//             /* case busy : don't update NVM_SM's state */
+//             /* case success : move to idle waiting for the next action */
+//             /* case fail : move to NVM-error state to procced to the suitable error handling procedure */
+//          }
          break;
-      case NVM_CHUNK_READ:
+      case NVM_CHUNK_READ:;
          /* Read notification of the nvm-chunk-read (success or fail) */
          /* report/notify chunk read (success or fail) to the upper layer */
          /* update NVM state according nvm-chunk-read*/
-         switch (nvm - chunk - read - state)
-         {
-            /* case busy : don't update NVM_SM's state */
-            /* case success : move to idle waiting for the next action */
-            /* case fail : move to NVM-error state to procced to the suitable error handling procedure */
-         }
+//          switch (/*nvm - chunk - read - state*/)
+//          {
+//             /* case busy : don't update NVM_SM's state */
+//             /* case success : move to idle waiting for the next action */
+//             /* case fail : move to NVM-error state to procced to the suitable error handling procedure */
+//          }
          break;
       }
    }
 }
-void NVM_WriteBlockDoneNotif(void);
-void NVM_ReadBlockDoneNotif(void);
+void NVM_WriteBlockDoneNotif(void)
+{}
+void NVM_ReadBlockDoneNotif(void)
+{}
