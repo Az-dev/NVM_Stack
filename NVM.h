@@ -42,7 +42,7 @@ NVM_CheckType NVM_WriteAll(void);
 NVM_CheckType NVM_ReadBlock(unsigned char BlockId, unsigned char *DataPtr);
 NVM_CheckType NVM_WriteBlock(unsigned char BlockId, const unsigned char *DataPtr);
 void NVM_Main(void);
-void NVM_WriteBlockDoneNotif(void);
-void NVM_ReadBlockDoneNotif(void);
+void NVM_WriteBlockDoneNotif(void); /* for interacting with memory interface */
+void NVM_ReadBlockDoneNotif(void);  /* for interacting with memory interface */
 
 #endif /* NVM_H_ */

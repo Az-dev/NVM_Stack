@@ -8,7 +8,6 @@
 #include "NVM.h"
 #include "NVM_Cfg.h"
 #include "MEM_IF.h"
-#include "MEM_IF_Cfg.h"
 /*- FUNCTIONS DEFINITIONS -------------------------------------------------------------------*/
 /*  
 *  Description : Initializes NVM module
@@ -149,10 +148,15 @@ NVM_CheckType NVM_ReadBlock(unsigned char BlockId, unsigned char *DataPtr)
    {
       if (NVM_BlocConfig[au8_iter].BlockId == BlockId)
       {
+         unsigned char au8_dataIter = 0u;
          /* raise block found flag */
          au8_blockFound = 1;
-         /* read block from mirror into *DataPtr */
-         *DataPtr = *(NVM_BlocConfig[au8_iter].BlockRamAddress);
+         /* loop over the data with-in the block */
+         for (; NVM_BlocConfig[au8_iter].BlockLength > au8_dataIter; au8_dataIter++)
+         {
+            /* read block from mirror into *DataPtr */
+            *(DataPtr + au8_dataIter) = *(NVM_BlocConfig[au8_iter].BlockRamAddress + au8_dataIter);
+         }
          /* report success */
          au8_NVM_ReadBlockState = NVM_OK;
       }
@@ -185,10 +189,15 @@ NVM_CheckType NVM_WriteBlock(unsigned char BlockId, const unsigned char *DataPtr
    {
       if (NVM_BlocConfig[au8_iter].BlockId == BlockId)
       {
+         unsigned char au8_dataIter = 0u;
          /* raise block found flag */
          au8_blockFound = 1;
-         /* copy/write the block into the mirror */
-         *(NVM_BlocConfig[au8_iter].BlockRamAddress) = *DataPtr;
+         /* loop over the data with-in the block */
+         for (; NVM_BlocConfig[au8_iter].BlockLength > au8_dataIter; au8_dataIter++)
+         {
+            /* copy/write the block into the mirror */
+            *(NVM_BlocConfig[au8_iter].BlockRamAddress + au8_dataIter) = *(DataPtr + au8_dataIter);
+         }
          /* report success */
          au8_NVM_WriteBlockState = NVM_OK;
       }
