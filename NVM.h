@@ -16,6 +16,13 @@
 #define NVM_CHUNK_WRITE 4u
 #define NVM_CHUNK_READ 5u
 
+/*--- Flags states ---*/
+#define NVM_WRITE_BLOCK_WAIT 0u
+#define NVM_READ_BLOCK_WAIT 1u
+#define NVM_WRITE_BLOCK_DONE 2u
+#define NVM_READ_BLOCK_DONE 3u
+
+
 typedef enum
 {
    NVM_OK,

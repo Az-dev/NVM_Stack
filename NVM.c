@@ -8,6 +8,13 @@
 #include "NVM.h"
 #include "NVM_Cfg.h"
 #include "MEM_IF.h"
+#include "std_types.h"
+/*- GLOBALS ---------------------------------------------------------------------------------*/
+static uint8_t gu8_writeBlockDone;
+static uint8_t gu8_readBlockDone;
+static uint8_t gu8_NVM_SM_State;
+static uint8_t gu8_readBlockCounter;
+static uint8_t gu8_writtenBlockCounter;
 /*- FUNCTIONS DEFINITIONS -------------------------------------------------------------------*/
 /*  
 *  Description : Initializes NVM module
@@ -18,7 +25,12 @@
 */
 void NVM_Init(void)
 {
-   /* Assign main call-backs */
+   /* Initialize variable */
+   gu8_writeBlockDone = NVM_WRITE_BLOCK_WAIT;
+   gu8_readBlockDone = NVM_READ_BLOCK_WAIT;
+   gu8_NVM_SM_State = NVM_IDLE;
+   gu8_readBlockCounter = 0;
+   gu8_writtenBlockCounter = 0;
 }
 
 /*
@@ -30,49 +42,12 @@ void NVM_Init(void)
 */
 NVM_CheckType NVM_ReadAll(void)
 {
-   /* Initialize a block counter */
-   unsigned char au8_blockCounter = 0u;
-   unsigned char au8_blockReadState = 0u;
-   NVM_CheckType au8_NVM_ReadAllState = 0u;
-   while ((unsigned char)NVM_NUM_OF_BLOCKS > au8_blockCounter)
-   {
-      /* 1 - Read a block : readFromMIF() */
-      au8_blockReadState = MEMIF_ReqReadBlock(NVM_BlocConfig[au8_blockCounter].BlockId, NVM_BlocConfig[au8_blockCounter].BlockRamAddress);
-      /* 2 - check state of block reading? TRUE: read the next block readFromMIF() and report busy; FALSE:report error */
-      switch (au8_blockReadState)
-      {
-      case MEMIF_BUSY:
-         /* report busy */
-         au8_NVM_ReadAllState = NVM_BUSY;
-         break;
-      case MEMIF_OK:
-         /* increment blocks counter */
-         au8_blockCounter++;
-         /* check if the last block to be transmitted has been reached or not */
-         if ((unsigned char)(NVM_NUM_OF_BLOCKS - 1u) == au8_blockCounter)
-         {
-            /* if last block is transmitted successfully : report NVM_OK*/
-            au8_NVM_ReadAllState = NVM_OK;
-         }
-         else
-         {
-            /* report busy : which indicates in this case that contigious blocks are still being read */
-            au8_NVM_ReadAllState = NVM_BUSY;
-         }
-         break;
-      case MEMIF_NOK:
-         /* report error */
-         au8_NVM_ReadAllState = NVM_NOK;
-         break;
-      }
-      /* incase of NVM_NOK : we have to break out of the loop */
-      if (NVM_NOK == au8_NVM_ReadAllState)
-      {
-         break;
-      }
-   }
-   /* Report success(finished all the blocks succssfully) or fail */
-   return au8_NVM_ReadAllState;
+   /* trigger CHUNK_Read state in NVM_Main() */
+   gu8_NVM_SM_State = NVM_CHUNK_READ;
+   /* Trigger REading the first block */
+   MEMIF_ReqReadBlock(NVM_BlocConfig[gu8_readBlockCounter].BlockId, NVM_BlocConfig[gu8_readBlockCounter].BlockRamAddress);   
+   /* return success */
+   return NVM_OK;
 }
 
 /* 
@@ -84,49 +59,12 @@ NVM_CheckType NVM_ReadAll(void)
 */
 NVM_CheckType NVM_WriteAll(void)
 {
-   /* Initialize a block counter */
-   unsigned char au8_blockCounter = 0u;
-   unsigned char au8_blockWriteState = 0u;
-   NVM_CheckType au8_NVM_WriteAllState = 0u;
-   while ((unsigned char)NVM_NUM_OF_BLOCKS > au8_blockCounter)
-   {
-      /* 1 - write a block : writeBlocMIF() */
-      au8_blockWriteState = MEMIF_ReqWriteBlock(NVM_BlocConfig[au8_blockCounter].BlockId, NVM_BlocConfig[au8_blockCounter].BlockRamAddress);
-      /* 2 - check state of block writting? TRUE: write the next block writeBlocMIF() and report busy; FALSE:report error */
-      switch (au8_blockWriteState)
-      {
-      case MEMIF_BUSY:
-         /* report busy */
-         au8_NVM_WriteAllState = NVM_BUSY;
-         break;
-      case MEMIF_OK:
-         /* increment blocks counter */
-         au8_blockCounter++;
-         /* check if the last block to be written has been reached or not */
-         if ((unsigned char)(NVM_NUM_OF_BLOCKS - 1u) == au8_blockCounter)
-         {
-            /* if last block is transmitted successfully : report NVM_OK*/
-            au8_NVM_WriteAllState = NVM_OK;
-         }
-         else
-         {
-            /* report busy : which indicates in this case that contigious blocks are still being read */
-            au8_NVM_WriteAllState = NVM_BUSY;
-         }
-         break;
-      case MEMIF_NOK:
-         /* report error */
-         au8_NVM_WriteAllState = NVM_NOK;
-         break;
-      }
-      /* incase of NVM_NOK : we have to break out of the loop */
-      if (NVM_NOK == au8_NVM_WriteAllState)
-      {
-         break;
-      }
-   }
-   /* Report success(finished all the blocks succssfully) or fail */
-   return au8_NVM_WriteAllState;
+   /* trigger CHUNK_Read state in NVM_Main() */
+   gu8_NVM_SM_State = NVM_CHUNK_WRITE;
+   /* Trigger REading the first block */
+   MEMIF_ReqWriteBlock(NVM_BlocConfig[gu8_writtenBlockCounter].BlockId, NVM_BlocConfig[gu8_writtenBlockCounter].BlockRamAddress);
+   /* return success */
+   return NVM_OK;
 }
 
 /*
@@ -157,6 +95,8 @@ NVM_CheckType NVM_ReadBlock(unsigned char BlockId, unsigned char *DataPtr)
             /* read block from mirror into *DataPtr */
             *(DataPtr + au8_dataIter) = *(NVM_BlocConfig[au8_iter].BlockRamAddress + au8_dataIter);
          }
+         /* notify upper layer */
+         NVM_BlocConfig[au8_iter].BlockReadNotifPtr();
          /* report success */
          au8_NVM_ReadBlockState = NVM_OK;
       }
@@ -198,6 +138,8 @@ NVM_CheckType NVM_WriteBlock(unsigned char BlockId, const unsigned char *DataPtr
             /* copy/write the block into the mirror */
             *(NVM_BlocConfig[au8_iter].BlockRamAddress + au8_dataIter) = *(DataPtr + au8_dataIter);
          }
+         /* notify upper layer */
+         NVM_BlocConfig[au8_iter].BlockWriteNotifPtr();
          /* report success */
          au8_NVM_WriteBlockState = NVM_OK;
       }
@@ -219,70 +161,69 @@ NVM_CheckType NVM_WriteBlock(unsigned char BlockId, const unsigned char *DataPtr
 *  @return void 
 */
 void NVM_Main(void)
-{
-   /* Checks NVM state-machin global state */
-   unsigned char NVM_SM_State = NVM_IDLE;
+{   
    while (1)
    {
       /* check on the state */
-      switch (NVM_SM_State)
+      switch (gu8_NVM_SM_State)
       {
       case NVM_IDLE:
          /* waiting for action */
-         break;
-      case NVM_ERROR:
-         /* Error Handling procedure according to different types of error */
-         /* Update NVM SM's state to IDLE */
-         NVM_SM_State = NVM_IDLE;
-         break;
-      case NVM_BLOCK_WRITE:;
-         /* Read notification of the nvm-block-wrtie (success or fail) */
-         /* report/notify block write (success or fail) to the upper layer */
-         /* update NVM state according nvm-block-wrtie*/
-//          switch (/*nvm - block - write - state*/)
-//          {
-//             /* case success : move to idle waiting for the next action */
-//             /* case fail : move to NVM-error state to procced to the suitable error handling procedure */
-//          }
-         break;
-      case NVM_BLOCK_READ:;
-         /* Read notification of the nvm-block-read (success or fail) */
-         /* report/notify block read (success or fail) to the upper layer */
-         /* update NVM state according nvm-block-read*/
-         
-//          switch (/*nvm - block - read - state*/)
-//          {
-//             /* case success : move to idle waiting for the next action */
-//             /* case fail : move to NVM-error state to procced to the suitable error handling procedure */
-//          }
-         
-         break;
+         break;      
       case NVM_CHUNK_WRITE:;
-         /* Read notification of the nvm-chunk-wrtie (success or fail) */
-         /* report/notify chunk write (success or fail) to the upper layer */
-         /* update NVM state according nvm-chunk-wrtie*/
-//          switch (/*nvm - chunk - write - state*/)
-//          {
-//             /* case busy : don't update NVM_SM's state */
-//             /* case success : move to idle waiting for the next action */
-//             /* case fail : move to NVM-error state to procced to the suitable error handling procedure */
-//          }
+         /*if: (check configuration array of block length vs block written counter) (&&) (MIF_block is written) */
+         if((NVM_NUM_OF_BLOCKS > gu8_writtenBlockCounter) && (NVM_WRITE_BLOCK_DONE == gu8_writeBlockDone))
+         {
+            /* pull flag down */
+            gu8_writeBlockDone = NVM_WRITE_BLOCK_WAIT;
+            /* increment blocks written counter */
+            gu8_writtenBlockCounter++;
+            /* write next block to memory interface */
+            MEMIF_ReqWriteBlock(NVM_BlocConfig[gu8_writtenBlockCounter].BlockId, NVM_BlocConfig[gu8_writtenBlockCounter].BlockRamAddress);
+         }
+         else if(NVM_NUM_OF_BLOCKS <= gu8_writtenBlockCounter)
+         {
+            /* move to IDLE */
+            gu8_NVM_SM_State = NVM_IDLE;
+            /* reinitialize counter */
+            gu8_writtenBlockCounter = 0;
+         }
+         else
+         {
+         }
          break;
       case NVM_CHUNK_READ:;
-         /* Read notification of the nvm-chunk-read (success or fail) */
-         /* report/notify chunk read (success or fail) to the upper layer */
-         /* update NVM state according nvm-chunk-read*/
-//          switch (/*nvm - chunk - read - state*/)
-//          {
-//             /* case busy : don't update NVM_SM's state */
-//             /* case success : move to idle waiting for the next action */
-//             /* case fail : move to NVM-error state to procced to the suitable error handling procedure */
-//          }
+         /*if: (check configuration array of block length vs block read counter) (&&) (MIF_block is read) */
+         if((NVM_NUM_OF_BLOCKS > gu8_readBlockCounter) && (NVM_READ_BLOCK_DONE == gu8_readBlockDone))
+         {
+            /* pull flag down */
+            gu8_readBlockDone = NVM_READ_BLOCK_WAIT;
+            /* increment blocks read counter */
+            gu8_readBlockCounter++;
+            /* read next block from memory interface */
+            MEMIF_ReqReadBlock(NVM_BlocConfig[gu8_readBlockCounter].BlockId, NVM_BlocConfig[gu8_readBlockCounter].BlockRamAddress);                   
+         }
+         else if(NVM_NUM_OF_BLOCKS <= gu8_readBlockCounter)
+         {
+            /* move to IDLE */
+            gu8_NVM_SM_State = NVM_IDLE;
+            /* reinitialize counter */
+            gu8_readBlockCounter = 0;
+         }
+         else
+         {
+         }
          break;
       }
    }
 }
 void NVM_WriteBlockDoneNotif(void)
-{}
+{
+   /* raise write block done notification */
+   gu8_writeBlockDone = NVM_WRITE_BLOCK_DONE;
+}
 void NVM_ReadBlockDoneNotif(void)
-{}
+{
+   /* raise read block done notification */
+   gu8_readBlockDone = NVM_READ_BLOCK_DONE;
+}
